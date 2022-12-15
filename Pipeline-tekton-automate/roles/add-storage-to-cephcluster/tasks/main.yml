@@ -1,0 +1,70 @@
+---
+# tasks file for add-storage-to-cephcluster
+- name: check machineset
+  shell: oc get machinesets -n openshift-machine-api
+  register: machinesets
+
+- debug:
+    msg: "{{ machinesets }}"
+
+- name: scale machines
+  shell: oc get machinesets -n openshift-machine-api -o name | grep storage | xargs -n1 -t oc scale -n openshift-machine-api --replicas=2
+
+- name: wait for 5 mins
+  wait_for:
+    timeout: 300
+
+- name: check new workerocs nodes added
+  shell: oc get node --show-labels | grep storage  | cut -d' ' -f1
+  register: new_workerocs_nodes
+
+- debug:
+    msg: "{{ new_workerocs_nodes.stdout_lines }}"
+
+- name: label the new workerocs nodes
+  shell: oc label node {{ new_workerocs_nodes.stdout_lines['%s'|format(item)|int-1] }} cluster.ocs.openshift.io/openshift-storage=
+  with_sequence: start=0  end="{{ count| int-1 }}"
+
+- name: create temp directory for doing work in
+  command: mktemp -d /tmp/add-storage-capacity-XXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: create build config description for custom image
+  template:
+    src: add-storage-capacity.yaml.j2
+    dest: "{{ tempdir }}/add-storage-capacity.yaml"
+
+- name: deploy ocs operator
+  shell: oc apply -f {{ tempdir }}/add-storage-capacity.yaml
+
+- name: check OSD pods
+  shell: oc get pod -o=custom-columns=NAME:.metadata.name,STATUS:.status.phase,NODE:.spec.nodeName -n openshift-storage | grep osd
+  register: osd_pods
+
+- debug:
+    msg: "{{ osd_pods }}"
+
+- name: access the toolbox
+  shell: oc get pods -n openshift-storage -l app=rook-ceph-tools -o name
+  register: toolbox_name
+
+- debug:
+    msg: "{{ toolbox_name.stdout }}"
+
+- name: check ceph status
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph status'
+  register: ceph_status
+
+- debug:
+    msg: "{{ ceph_status.stdout_lines }}"
+
+- name: check ceph osd status
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph osd crush tree'
+  register: ceph_osd
+
+- debug:
+    msg: "{{ ceph_osd.stdout_lines }}"

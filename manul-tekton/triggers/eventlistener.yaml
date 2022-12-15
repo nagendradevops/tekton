@@ -1,0 +1,34 @@
+#Note: this must enable
+#oc label namespace pipelines-tutorial operator.tekton.dev/enable-annotation=enabled
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: github-listener-inter
+  namespace: openshift-pipelines
+spec:
+  serviceAccountName: tekton-robot
+  triggers:
+    - name: hello-trig 
+      bindings:
+      - ref: build-deploy-bind
+      template:
+        ref: build-deploy-temp
+  # triggers:
+  #   - triggerRef: tekton-github-trigger
+    
+  # - name: github-listener
+  #   interceptors:
+  #   - github:
+  #       secretRef:
+  #         secretName: github-trigger-secret
+  #         secretKey: secretToken
+  #       eventTypes:
+  #       - push
+  #   - cel:
+  #       filter: "body.ref == 'refs/heads/main'"
+  #   bindings:
+  #   - ref: build-deploy-binding
+  #   template:
+  #     ref: build-deploy-template
+
+---

@@ -1,0 +1,13 @@
+1. Install the Redhat Openshift Pipelines operator  -> Done
+2. Create tasks:
+      gitclone, maven-dependencies(compile,build jar/war),
+      create-image(image creation,push to artifactory (nexus/jfrog)), 
+      apply manifest (deploy an application - includes deployment, service, routes)
+3. Create Pipeline & test it.
+4. Create piplinerun to run the Pipeline
+5. Install the tekton triggers to run the Pipeline based on events like: push, pull etc
+6. Create a tasks for triggers
+       trigger-bindings
+       trigger-template
+       evenlistener
+       triggers  - may not required

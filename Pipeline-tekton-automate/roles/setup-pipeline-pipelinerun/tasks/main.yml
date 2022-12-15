@@ -1,0 +1,50 @@
+---
+# tasks file for ocs_for_prometheus
+- name: Login to the Openshift cli
+  shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+
+- name: List pods of openshift-monitoring
+  shell: oc get pods,pvc -n openshift-monitoring
+  register: pods_monitoring
+
+- debug:
+    msg: "{{ pods_monitoring }}"
+
+- name: check configmap of openshift-monitoring
+  shell: oc -n openshift-monitoring get configmap cluster-monitoring-config
+  register: config_map
+  ignore_errors: yes
+
+- debug:
+    msg: "{{ config_map.stdout }}"
+
+- name: create temp directory for doing work in
+  command: mktemp -d /tmp/cluster-monitor-config-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: copy template of  cluster-monitoring-config
+  template:
+    src: monitor_config.yaml.j2
+    dest: "{{ tempdir }}/cluster-monitoring-config.yaml"
+
+- name: deploy cluster-monitoring-config
+  shell: oc apply -f {{ tempdir }}/cluster-monitoring-config.yaml
+
+# - name: create configmap
+#   shell: curl -s https://github.com/red-hat-storage/ocs-training/blob/master/training/modules/ocs4/attachments/cluster-monitoring-config.yaml | oc applu -f -
+#   when: config_map.stdout == ""
+
+- name: wait for 3 mins pods will be restarted
+  wait_for:
+     timeout: 180
+
+- name: check pod status
+  shell: oc get pods,pvc -n openshift-monitoring
+  register: pods_monitoring
+
+- debug:
+    msg: "{{ pods_monitoring }}"

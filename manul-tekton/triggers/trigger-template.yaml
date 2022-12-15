@@ -1,0 +1,68 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: build-deploy-temp
+spec:
+  params:
+    - default: 'https://github.com/nagendradevops/spb-docker.git'
+      name: git-repo-url
+    - name: application-folder-name
+      default: '.'
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: build-deploy-
+      spec:
+        params:
+          - name: git-repo-url
+            value: $(tt.params.git-repo-url)
+          - name: application-folder-name
+            value: $(tt.params.aplication-folder-name)
+        pipelineRef:
+          name: mavn-pl-nex
+        workspaces:
+          - name: source
+            persistentVolumeClaim:
+              claimName: pipeline-pvc
+      # - name: applocation-folder-name
+      #   value: '.'
+      # - name: dockerFilePath
+      #   value: '.'
+      # - name: application-name
+      #   value: java-app
+      # - name: image-name
+      #   value: java-spb
+        # - name: deployment-name
+        #     value: $(tt.params.git-repo-name)
+        # - name: git-url
+        #     value: $(tt.params.git-repo-url)
+        # - name: git-revision
+        #     value: $(tt.params.git-revision)
+        # - name: IMAGE
+        #    value: >-
+        #       image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/$(tt.params.git-repo-name)
+      # workspaces:
+      # - name: source
+      #   description: The workspace consisting of the maven project and custom maven settings.
+      #   persistentVolumeClaim:
+      #     claimName: pipeline-pvc
+      # - name: app-source
+      #   emptyDir: {}
+      # - name: config-source
+      #   emptyDir: {}
+---
+
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: build-deploy-bind  
+spec:
+  params:
+  - name: git-repo-url
+    value: $(body.repository.url)
+  # - name: git-repo-name
+  #   value: $(body.repository.name)
+  # - name: buildRevision
+  #   value: $(body.head_commit.id)
+---

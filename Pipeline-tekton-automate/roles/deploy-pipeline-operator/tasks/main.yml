@@ -1,0 +1,58 @@
+---
+# tasks file for deploy-ocs
+- name: Login to the Openshift cli
+  shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}  --insecure-skip-tls-verify 
+
+# - name:  create namespace
+#   shell: oc create namespace openshift-pipelines
+#   ignore_errors: yes
+
+- name: create temp directory for doing work in
+  command: mktemp -d /tmp/pipeline-operator-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: create pipelines operator custom image
+  template:
+    src: openshift-pipelines.yaml.j2
+    dest: "{{ tempdir }}/openshift-pipelines.yaml"    
+
+- name: create build config description for custom image
+  template:
+    src: operator-group.yaml.j2
+    dest: "{{ tempdir }}/operator-group.yaml"
+
+- name: create build config description for custom image
+  template:
+    src: subscribe-operator.yaml.j2
+    dest: "{{ tempdir }}/subscribe-operator.yaml"
+
+- name: configure openshift-pipelines operator
+  shell: oc apply -f {{ tempdir }}/openshift-pipelines.yaml
+
+- name: deploy openshift-pipelines operator
+  shell: oc apply -f {{ tempdir }}/operator-group.yaml
+
+- name: subscribe the openshift-pipelines
+  shell: oc apply -f {{ tempdir }}/subscribe-operator.yaml
+
+- name: wait for 2 mins
+  wait_for:
+    timeout: 120
+
+- name: check csv
+  shell: oc get csv -n openshift-operators
+  register: csv_operator
+
+- debug:
+    msg: "{{ csv_operator }}"
+
+- name: check deployments of openshift-pipelines operator
+  shell: oc get pods -n openshift-operators
+  register: pods
+
+- debug:
+    msg: "{{ pods }}"

@@ -1,0 +1,69 @@
+---
+- name: create temp directory for doing work in
+  command: mktemp -d /tmp/rook-ceph-toolbox-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: deploy rook toolbox
+  template:
+    src: toolbox.yaml.j2
+    dest: "{{ tempdir }}/toolbox.yaml"
+
+- name: deploy toolbox
+  shell: oc apply -f {{ tempdir }}/toolbox.yaml
+
+- name: wait for 1 min
+  wait_for:
+    timeout: 60
+
+- name: access the toolbox
+  shell: oc get pods -n openshift-storage -l app=rook-ceph-tools -o name
+  register: toolbox_name
+
+- debug:
+    msg: "{{ toolbox_name.stdout }}"
+
+- name: check ceph status
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph status'
+  register: ceph_status
+
+- debug:
+    msg: "{{ ceph_status.stdout_lines }}"
+
+- name: check ceph versions
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph versions'
+  register: ceph_version
+
+- debug:
+    msg: "{{ ceph_version.stdout_lines }}"
+
+- name: check ceph osd  status
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph osd status'
+  register: ceph_ods_status
+
+- debug:
+    msg: "{{ ceph_ods_status.stdout_lines }}"
+
+- name: check ceph osd tree
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph osd tree'
+  register: ceph_osd_tree
+
+- debug:
+    msg: "{{ ceph_osd_tree.stdout_lines }}"
+
+- name: check ceph df
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'ceph df'
+  register: ceph_df
+
+- debug:
+    msg: "{{ ceph_df.stdout_lines }}"
+
+- name: check rados df
+  shell: oc rsh -n openshift-storage {{ toolbox_name.stdout }} /bin/bash -c 'rados df'
+  register: rados_df
+
+- debug:
+    msg: "{{ rados_df.stdout_lines }}"

@@ -1,0 +1,11 @@
+---
+- name: openshift container storage deployment
+  hosts: localhost
+  become: true
+  roles:
+    # - deploy-pipeline-operator
+    - pipeline-tasks
+    # - setup-pipeline-pipelinerun
+    # - install-triggers-listeners
+    # - trigger-pipeline-eventlistener
+ 

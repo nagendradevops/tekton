@@ -1,0 +1,57 @@
+---
+# Create directory for storing yaml files on remote host
+- name: Login to the Openshift cli
+  shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+
+- name: Ansible check directory.
+  stat:
+    path: /tmp/pipeline_tasks
+  register: my_folder
+
+- name: "Ansible Prepare yaml of directory if not exists"
+  file:
+    path: /tmp/pipeline_tasks/
+    state: directory
+    mode: 0755
+  when: my_folder.stat.exists == false
+
+# Create machine-sets for worker nodes
+
+- name: Include machine-sets variables for worker in OCP cluster
+  include_vars: worker-vars.yml
+
+- name: Include machine-sets variables for zone#1
+  include_vars: zone1.yml
+
+- name: Prepare yaml of git-clone task to clone the repository
+  template:
+        src: git-clone.yml.j2
+        dest: /tmp/pipeline_tasks/git-clone.yml
+
+- name: Prepare yaml of maven-dependencies task to compile, build/create jar file
+  template:
+        src: maven-depend.yml.j2
+        dest: /tmp/pipeline_tasks/maven-depend.yml
+        
+- name: Prepare yaml of building image task
+  template:
+        src: build-maven-image.yaml.j2
+        dest: /tmp/pipeline_tasks/build-maven-image.yaml
+
+- name: Prepare yaml of applying manifests (k8s) task
+  template:
+        src: apply-manifests.yml.j2
+        dest: /tmp/pipeline_tasks/apply-manifests.yml
+
+- name: Prepare yaml of PVC task
+  template:
+        src: pipeline-pvc.yml.j2
+        dest: /tmp/pipeline_tasks/pipeline-pvc.yml
+
+- name: Create master machine-sets on Cluster
+  shell: oc create -f /tmp/pipeline_tasks/
+
+- name: wait for 1 mins
+  wait_for:
+    timeout: 60
+

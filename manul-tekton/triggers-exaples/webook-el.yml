@@ -1,0 +1,27 @@
+#NOTE
+#oc adm policy add-scc-to-user anyuid -z tekton-pipelines-webhook
+#oc adm policy add-scc-to-user anyuid -z tekton-pipelines-controller
+#oc adm policy add-scc-to-user anyuid -z tekton-triggers-core-interceptors
+---
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: EventListener
+metadata:
+  name: listener-interceptor
+spec:
+  serviceAccountName: pipeline
+  triggers:
+    - name: foo-trig
+      interceptors:
+        - webhook:
+            header:
+              - name: Foo-Trig-Header1
+                value: string-value
+            objectRef:
+              kind: Service
+              name: gh-validate
+              apiVersion: v1
+              namespace: default
+      bindings:
+        - ref: vote-app
+      template:
+        ref: vote-app
