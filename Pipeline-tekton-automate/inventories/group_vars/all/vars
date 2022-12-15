@@ -1,34 +1,17 @@
 region: eu-west-2
-instance_type: i3en.2xlarge
-ami_id: ami-00d8a741ebe74f0c4
-instance_profile: ocp-create-securitygroup-WorkerInstanceProfile-tUmHILPQSR1C
-az1: amoslondondev-private-2a
-az2: amoslondondev-private2b
-az3: amoslondondev-private-2c
-count: 1
 #OCP login variables
-ocp_login_token: sha256~w1qmlz2X8_XGW9X4NSb_vhmFAapwdOafX_5T0rXufro
-ocp_api_url: https://api.amosirelanddev.amosonline.io:6443
-
-#zone variables
-# AZ1: eu-west-2a
-# AZ2: eu-west-2b
-# AZ3: eu-west-2c
-
-# AZ1_subnet: amoslondondev-private-2a
-# AZ2_subnet: amoslondondev-private2b
-# AZ3_subnet: amoslondondev-private-2c
+ocp_login_token: 
+ocp_api_url: 
 
 ansible_ssh_user: core
 ansible_become: "yes"
-ansible_ssh_private_key_file: /home/nagendra-reddy.bandi/.ssh/london-dev-key
+ansible_ssh_private_key_file: /home/nagendra-reddy.bandi/.ssh/devv-key
 ansible_ssh_port: 22
 ansible_connection: ssh
 host_key_checking: false
 ansible_python_interpreter: /usr/libexec/platform-python
 
-STORAGE_CLASS: ocs-storagecluster-ceph-rbd
-VOLUME_CAPACITY: 5Gi
+
 
 pipelines_channel: pipelines-1.8
 
