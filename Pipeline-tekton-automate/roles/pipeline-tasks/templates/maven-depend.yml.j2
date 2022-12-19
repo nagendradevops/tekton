@@ -1,7 +1,8 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: maven-dep
+  name: mvn-dep
+  namespace: {{ NAMESPACE }}
   labels:
     app.kubernetes.io/version: "0.2"
   annotations:

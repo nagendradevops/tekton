@@ -1,0 +1,56 @@
+---
+# tasks file for configure tekton
+
+- name: Login to the Openshift cli
+  shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+
+- name: create temp directory for doing work in
+  command: mktemp -d /tmp/config-tekton-XXXXXX
+  register: mktemp
+  changed_when: False
+
+- set_fact:
+    tempdir: "{{ mktemp.stdout }}"
+
+- name: configure a  ServiceAccount (pipeline)
+  template:
+    src: sa-pipeline.yaml.j2
+    dest: "{{ tempdir }}/sa-pipeline.yml"
+
+- name: Create ServiceAccount i.e pipeline
+  shell: oc apply -f {{ tempdir }}/sa-pipeline.yml
+
+- name: Assign Privilized access to ServiceAccount
+  shell: oc adm policy add-scc-to-user privileged -z pipeline
+
+- name: configure a  default configmap (config-defaults)
+  template:
+    src: configmap.yaml.j2
+    dest: "{{ tempdir }}/configmap.yml"
+
+- name: Change default configmap to use the pipeline SA
+  shell: oc apply -f {{ tempdir }}/configmap.yml
+
+- name: Prepare yaml of gitsecret task to access the repository
+  template:
+      src: gitsecret.yaml.j2
+      dest: "{{ tempdir }}/gitsecret.yml"
+
+- name: Prepare yaml of PVC task
+  template:
+      src: pipeline-pvc.yaml.j2
+      dest: "{{ tempdir }}/pipeline-pvc.yml"
+
+- name: create gitsecret
+  shell: oc apply -f {{ tempdir }}/gitsecret.yml
+
+- name: Grant our ServiceAccount access to the Git Repositories 
+  shell: oc secrets link pipeline gitsecret -n openshift-pipelines
+
+- name: create pvc
+  shell: oc apply -f {{ tempdir }}/pipeline-pvc.yml
+
+# - name: wait for 1 mins to create pvc
+#   wait_for:
+#     timeout: 60
+

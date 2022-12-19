@@ -1,12 +1,106 @@
 1. Install the Redhat Openshift Pipelines operator  -> Done
-2. Create tasks:
+2. ++++++++++++=========Configure Tekton ++++++++++++=========
+ In this section we will create a ServiceAccount for our pipeline and assign it credentials to handle four things:
+  Run containers as root (for Buildah/Docker),
+  access our external image registry,
+  access our git repositories,
+  control to modify our application's Deployment yaml file.
+
+  ***After Installed the operator we need to create ServiceAccount, clusterrole, clusterrolebinding, configmaps
+   need to give permission to ServiceAccount ***
+
+   To use the Buildah Task you will need to grant privileged access to the Pod running the Task. 
+   By default, Tekton uses the cluster's default ServiceAccount. 
+   We will grant access by creating our own pipeline ServiceAccount, assigning it Privileged access and
+   applying it to the PipelineRun.
+
+   **** oc adm policy add-scc-to-user privileged -z pipeline ***
+
+   To use this SA, we will apply this line later in our PipelineRun under spec:
+
+      serviceAccountName: pipeline
+
+However, we will also change our default configmap to use the pipeline SA:
+
+#kubectl create configmap config-defaults \
+--from-literal=default-service-account=pipeline \
+-o yaml -n tekton-pipelines \
+--dry-run=client  | kubectl replace -f -
+
+Next, we will need to give this ServiceAccount access to resources in the namespace we are using by creating
+a ClusterRoleBinding. This is needed in our example to reapply the Image tag in the update-deployment Task.
+In this case, we will give the pipeline SA the cluster-admin role, but you may decide to create your own
+ClusterRole and scope the pipeline's access further. This SA, the pipeline artifacts, and the application 
+artifacts will be deployed in the respective ex:openshift-pipelines namespace.
+
+# oc create clusterrolebinding pipeline --clusterrole=cluster-admin --serviceaccount=openshift-pipelines:pipeline
+
+++++++++++++=========***********Accessing the External Registry***********++++++++++++=========
+
+We need to grant access to our external/internal image registry.
+To do this, create a secret and link it to the ServiceAccount created before. Here is an example:
+
+===> example for external:
+oc create secret docker-registry srd-docker-registry \
+--docker-server=docker.io \
+--docker-username=<username> \
+--docker-password=<api_token> \
+--docker-email=<email>
+
+@@@ Link the secret to your pipeline ServiceAccount like so:
+
+# oc secrets link pipeline srd-docker-registry
+
+@@@ If you need to pull dependencies from an image registry in your pipeline, you will need to grant it
+this permission in addition to the previous command.
+
+# oc secrets link pipeline srd-docker-registry --for=pull
+
+++++++++++++=========***********Accessing the Git Repositories*************++++++++++++=========
+
+Similar to the external registry, we will create our git secret and link it to the ServiceAccount.
+Here is a yaml file example with an annotation needed by Tekton.
+=====================
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitsecret
+  annotations:
+    tekton.dev/git-0: https://github.com
+type: kubernetes.io/basic-auth
+stringData:
+  username: user@email.com
+  password: password_token
+=================
+++++++++++++=========*************Create Pipeline Storage*************++++++++++++=========
+Lastly, our Pipeline will need a place to clone source code and share cached build artifacts. 
+We will create a 5Gi PersistentVolumeClaim, which will later be given as a parameter in the PipelineRun
+to use when executing the Pipeline.
+===============
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pipeline-pvc
+spec:
+  resources:
+    requests:
+      storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain 
+====================
+++++++++++++=========That is all for Tekton configuration.=========++++++++++
+++++++++++++Create sonatype/nexus3:3.38.1 & sonarqube:8.9.6-community deployments++++++++++
+
+3. Create tasks:
       gitclone, maven-dependencies(compile,build jar/war),
       create-image(image creation,push to artifactory (nexus/jfrog)), 
       apply manifest (deploy an application - includes deployment, service, routes)
-3. Create Pipeline & test it.
-4. Create piplinerun to run the Pipeline
-5. Install the tekton triggers to run the Pipeline based on events like: push, pull etc
-6. Create a tasks for triggers
+4. Create Pipeline & test it.
+5. Create piplinerun to run the Pipeline
+6. Install the tekton triggers to run the Pipeline based on events like: push, pull etc
+7. Create a tasks for triggers
        trigger-bindings
        trigger-template
        evenlistener

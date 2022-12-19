@@ -1,7 +1,8 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: apply-manifests
+  name: apply-k8s
+  namespace: {{ NAMESPACE }}
 spec:
   workspaces:
   - name: source

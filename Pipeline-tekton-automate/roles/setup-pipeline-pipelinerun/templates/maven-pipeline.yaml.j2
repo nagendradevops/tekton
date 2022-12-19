@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: mavn-pl-nex
+  namespace: {{ NAMESPACE }}
+spec:
+  params:
+  # - name: dependency-git-url  
+  # - name: dependency-folder-name
+  #   default: dependency-source
+  - name: git-repo-url 
+    type: string
+    default: 'https://github.com/nagendradevops/spb-docker.git'
+  workspaces:
+  - name: source  
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: gitcl
+      params:
+      - name: url
+        value: $(params.git-repo-url) 
+      workspaces:
+      - name: output
+        workspace: source 
+   

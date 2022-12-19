@@ -1,10 +1,15 @@
 #localhost ansible_connection=local
+[master]
+10.0.80.123
+10.0.48.158
+10.0.75.209
 
+#pem_file_path: /home/nagendra-reddy.bandi/.ssh/london-dev-key
 
 [external_nodes:vars]
 ansible_ssh_user=core
 ansible_become="yes"
-ansible_ssh_private_key_file=/home/nagendra-reddy.bandi/.ssh/dev-key
+ansible_ssh_private_key_file=/home/nagendra-reddy.bandi/.ssh/london-dev-key
 ansible_ssh_port=22
 ansible_connection=ssh
 host_key_checking=false

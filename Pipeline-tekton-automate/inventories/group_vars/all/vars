@@ -1,17 +1,25 @@
-region: eu-west-2
 #OCP login variables
-ocp_login_token: 
-ocp_api_url: 
+ocp_login_token: sha256~eyc8Dm18cdmkKm0CULwTTNiLDvXp0W0Dufbb-fG63Uo
+#ocp_api_url: https://api.amosirelanddev.amosonline.io:6443
+ocp_api_url: https://api.amoslondondev.amosonline.io:6443
+
 
 ansible_ssh_user: core
 ansible_become: "yes"
-ansible_ssh_private_key_file: /home/nagendra-reddy.bandi/.ssh/devv-key
+ansible_ssh_private_key_file: /home/nagendra-reddy.bandi/.ssh/london-dev-key
+#ansible_ssh_private_key_file: /home/ec2-user/.ssh/ireland-dev-key
 ansible_ssh_port: 22
 ansible_connection: ssh
 host_key_checking: false
 ansible_python_interpreter: /usr/libexec/platform-python
 
-
-
+#operator channel
 pipelines_channel: pipelines-1.8
+
+NAMESPACE: openshift-pipelines
+
+SA: pipeline
+git_username: nagendradevops
+git_token: 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
+storage_size: 5Gi
 

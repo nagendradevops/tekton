@@ -1,7 +1,8 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: gitclone
+  name: gitcl
+  namespace: {{ NAMESPACE }}
   labels:
     app.kubernetes.io/version: "0.1"
   annotations:

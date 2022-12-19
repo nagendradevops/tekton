@@ -1,0 +1,16 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: java-app-example-pl
+  namespace: {{ NAMESPACE }}
+spec:
+  pipelineRef:
+    name: mavn-pl-nex
+  serviceAccountName: pipeline
+  params:
+    - name: git-repo-url
+      value: https://github.com/nagendradevops/spb-docker.git 
+  workspaces:
+  - name: source
+    persistentVolumeClaim:
+      claimName: pipeline-pvc
