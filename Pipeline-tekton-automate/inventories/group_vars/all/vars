@@ -1,7 +1,7 @@
 #OCP login variables
-ocp_login_token: sha256~eyc8Dm18cdmkKm0CULwTTNiLDvXp0W0Dufbb-fG63Uo
-#ocp_api_url: https://api.amosirelanddev.amosonline.io:6443
-ocp_api_url: https://api.amoslondondev.amosonline.io:6443
+ocp_login_token: 
+#ocp_api_url: 
+ocp_api_url: 
 
 
 ansible_ssh_user: core
@@ -20,6 +20,6 @@ NAMESPACE: openshift-pipelines
 
 SA: pipeline
 git_username: nagendradevops
-git_token: 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
+git_token: 
 storage_size: 5Gi
 
