@@ -1,7 +1,7 @@
 #OCP login variables
-ocp_login_token: sha256~zUBGoQIJvcNa71aCGMo8GuqvBpe-qmE_UOZjcNq2oBI
-#ocp_api_url: https://api.amosirelanddev.amosonline.io:6443
-ocp_api_url: https://api.amoslondondev.amosonline.io:6443
+ocp_login_token: 
+#ocp_api_url: https://
+ocp_api_url: 
 
 
 ansible_ssh_user: core
@@ -20,19 +20,19 @@ NAMESPACE: pipelines-tutorial
 
 SA: pipeline
 git_username: nagendradevops
-git_token: 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
+git_token: 
 storage_size: 5Gi
 
 #internal registry details
-int_registry_user_name: nagendra-reddy.bandi
-OCP_TOKEN: sha256~zUBGoQIJvcNa71aCGMo8GuqvBpe-qmE_UOZjcNq2oBI
-registry_url: default-route-openshift-image-registry.apps.amoslondondev.amosonline.io
+int_registry_user_name: 
+OCP_TOKEN: 
+registry_url: 
 
 image_version: 0.5
 Image_stream: javaspb
 
 #sonar related #example
-sonar_login_token: 22b11d3b5fbd69acf9aa0903e7f521519efdb2b9 
-sonar_host_url: https://sonarqube-pipelines-tutorial.apps.amoslondondev.amosonline.io
-sonar_project_key: java-spring-boot
+sonar_login_token: 
+sonar_host_url: 
+sonar_project_key: 
 
