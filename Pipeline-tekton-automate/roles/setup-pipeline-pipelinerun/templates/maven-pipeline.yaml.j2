@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: mavn-pl-nex
+  name: pl-nex
   namespace: {{ NAMESPACE }}
 spec:
   params:
@@ -9,18 +9,72 @@ spec:
   # - name: dependency-folder-name
   #   default: dependency-source
   - name: git-repo-url 
-    type: string
-    default: 'https://github.com/nagendradevops/spb-docker.git'
+    default: ""
+  - name: application-folder-name
+    default: ""
+  - name: dockerfile-path
+    default: "."
+  - name: application-name
+  - name: image-name
   workspaces:
-  - name: source  
+  - name: source 
   tasks:
     - name: git-clone
       taskRef:
-        name: gitcl
+        name: gtcln
       params:
-      - name: url
+      - name: git-repo-url
         value: $(params.git-repo-url) 
       workspaces:
       - name: output
         workspace: source 
+    - name: maven-dependencies
+      runAfter:
+        - git-clone
+      taskRef:
+        name: mven-dep
+      params:
+      - name: GOALS
+        value: ["clean","install","package","sonar:sonar","deploy"] 
+      workspaces:
+      - name: source
+        workspace: source
+    - name: build-application-image
+      runAfter:
+        - maven-dependencies
+      taskRef:
+        name: bu-mavn
+      params:
+      - name: GOALS
+        value: ["deploy"]
+      - name: IMAGE
+        value: $(params.image-name)":"$(tasks.git-clone.results.commit)
+ 
+      - name: DOCKERFILE
+        value: $(params.dockerfile-path)
+      workspaces:
+      - name: source
+        workspace: source
+    - name: apply-manifests
+      runAfter:
+      - build-application-image
+      taskRef:
+        name: k8s-app
+      params:
+        - name: manifest_dir
+          value: $(params.application-folder-name)/k8s
+      workspaces:
+      - name: source
+        workspace: source
+ #   - name: update-deployment
+ #     runAfter:
+ #     - apply-manifests
+ #     taskRef:
+ #       name: update-deployment
+ #     params:
+ #     - name: deployment
+ #       value: $(params.application-name) #changed from params.application-name to params.deployment-name
+ #     - name: IMAGE
+ #       value: $(params.image-name):$(tasks.git-clone.results.commit)
+ #       #changed: from $(params.image-name)":"$(tasks.application-git-clone.results.commit)
    

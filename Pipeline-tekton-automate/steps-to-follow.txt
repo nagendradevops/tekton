@@ -27,7 +27,7 @@ However, we will also change our default configmap to use the pipeline SA:
 -o yaml -n tekton-pipelines \
 --dry-run=client  | kubectl replace -f -
 
-Next, we will need to give this ServiceAccount access to resources in the namespace we are using by creating
+Next, we will need to give this ServiceAccount access to resources in the namespace, we are using by creating
 a ClusterRoleBinding. This is needed in our example to reapply the Image tag in the update-deployment Task.
 In this case, we will give the pipeline SA the cluster-admin role, but you may decide to create your own
 ClusterRole and scope the pipeline's access further. This SA, the pipeline artifacts, and the application 

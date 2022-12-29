@@ -9,7 +9,15 @@ spec:
   serviceAccountName: pipeline
   params:
     - name: git-repo-url
-      value: https://github.com/nagendradevops/spb-docker.git 
+      value: https://github.com/nagendradevops/spb-docker.git
+    - name: application-folder
+      value: .
+    - name: docker-file
+      value: .
+    - name: application-name
+      value: java-spb
+    - name: image-name
+      value: javaspb
   workspaces:
   - name: source
     persistentVolumeClaim:

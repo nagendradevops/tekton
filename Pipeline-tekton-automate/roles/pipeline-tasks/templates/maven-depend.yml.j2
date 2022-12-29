@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: mvn-dep
+  name: mven-dep
   namespace: {{ NAMESPACE }}
   labels:
     app.kubernetes.io/version: "0.2"
@@ -13,8 +13,7 @@ spec:
     This Task can be used to run a Maven build.
   workspaces:
     - name: source
-      description: The workspace consisting of the maven project and custom maven settings.
-      
+      description: The workspace consisting of the maven project and custom maven settings.      
   params:
     - name: MAVEN_IMAGE
       type: string
@@ -27,13 +26,7 @@ spec:
         - "clean"
         - "install"
         - "package"
-     #   - "verify sonar:sonar"
-        - "deploy"
-    # - name: DEPLOY
-    #   description: maven goals to run i.e deploy
-    #   type: array
-    #   default:
-    #     - "deploy"
+        - "sonar:sonar"
     - name: MAVEN_MIRROR_URL
       description: The Maven repository mirror url
       type: string
@@ -83,42 +76,38 @@ spec:
         [[ -f $(workspaces.source.path)/settings.xml ]] && \
         echo 'using existing $(workspaces.source.path)/settings.xml' && exit 0
         cat > $(workspaces.source.path)/settings.xml <<EOF
-        <settings xmlns="http://maven.apache.org/SETTINGS/1.2.0">
-        <pluginGroups xmlns="http://maven.apache.org/SETTINGS/1.1.0">
-          <pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
-        </pluginGroups>
-         <profiles>
-          <profile>
-            <id>maven-profile</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <!-- Optional URL to server. Default value is http://localhost:9000 -->
-                <sonar.host.url>
-                <!-- http://myserver:9000 -->
-                https://sonarqube-pipelines-tutorial.apps.amoslondondev.amosonline.io
-                </sonar.host.url>
-            </properties>
-          </profile>
-        </profiles>
-        <servers>
-            <server>
-               <id>java-app</id>
-               <username>deploy-user</username>
-               <password>deploy123</password>
-              </server>
-              <server>
-                  <id>java-snap</id>
+         
+         <settings>
+           <pluginGroups xmlns="http://maven.apache.org/SETTINGS/1.1.0">
+            <pluginGroup>org.sonarsource.scanner.maven</pluginGroup>
+           </pluginGroups>
+            <profiles>
+              <profile>
+                <id>sonar</id>
+                <activation>
+                    <activeByDefault>true</activeByDefault>
+                </activation>
+                <properties>
+                    <!-- Optional URL to server. Default value is http://localhost:9000 -->
+                    <sonar.host.url>
+                    <!-- http://myserver:9000 -->
+                      {{ sonar_host_url }}
+                    </sonar.host.url>
+                </properties>
+              </profile>
+            </profiles>
+            <servers>
+                <server>
+                  <id>java-app</id>
                   <username>deploy-user</username>
                   <password>deploy123</password>
-              </server>
-               <server>
-               <id>sonar</id>
-               <username>admin</username>
-               <password>admin123</password>
-              </server>
-        </servers>
+                  </server>
+                  <server>
+                      <id>java-snap</id>
+                      <username>deploy-user</username>
+                      <password>deploy123</password>
+                  </server>              
+            </servers>
             <mirrors>
               <!-- The mirrors added here are generated from environment variables. Don't change. -->
               <!-- ### mirrors from ENV ### -->
@@ -128,8 +117,11 @@ spec:
               <!-- ### HTTP proxy from ENV ### -->
             </proxies>
         </settings>
+
         EOF
+
         xml=""
+
         if [ -n "$(params.PROXY_HOST)" -a -n "$(params.PROXY_PORT)" ]; then
           xml="<proxy>\
             <id>genproxy</id>\
@@ -150,7 +142,9 @@ spec:
               </proxy>"
           sed -i "s|<!-- ### HTTP proxy from ENV ### -->|$xml|" $(workspaces.source.path)/settings.xml
         fi
-        if [ -n "$(params.SERVER_USER)" -a -n "$(params.SERVER_PASSWORD)" ]; then
+
+        if [ -n "$(params.SERVER_USER)" -a -n "$(params.SERVER_PASSWORD)" ];
+        then
           xml="<server>\
             <id>sample-app</id>"
           xml="$xml\
@@ -160,6 +154,7 @@ spec:
               </server>"
           sed -i "s|<!-- ### SERVER's USER INFO from ENV ### -->|$xml|" $(workspaces.source.path)/settings.xml
         fi
+
         if [ -n "$(params.MAVEN_MIRROR_URL)" ]; then
           xml="    <mirror>\
             <id>mirror.default</id>\
@@ -168,39 +163,20 @@ spec:
           </mirror>"
           sed -i "s|<!-- ### mirrors from ENV ### -->|$xml|" $(workspaces.source.path)/settings.xml
         fi
-        
-    - name: mvn-goals
-      image: $(params.MAVEN_IMAGE)
-      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
-      command: ["/usr/bin/mvn"]
-      args:
-        - -s
+    - args:
+        - '-s'
         - $(workspaces.source.path)/settings.xml
-        - -Dmaven.repo.local=$(workspaces.source.path)
-        # - -Dsonar.projectKey=java-spring-boot \
-        # - -Dsonar.host.url=https://sonarqube-pipelines-tutorial.apps.amoslondondev.amosonline.io \
-        # - -Dsonar.login=4d3f8e6c60da992c19742316f53a60a8ef70bdc3
-        - "$(params.GOALS)"
+        - '-Dmaven.repo.local=$(workspaces.source.path)'
+        - '-Dsonar.projectKey={{ sonar_project_key }}'
+        - '-Dsonar.login={{ sonar_login_token }}'
+        - $(params.GOALS)
+      command:
+        - /usr/bin/mvn
+      image: $(params.MAVEN_IMAGE)
+      name: mvn-clean-package
+      resources: {}
+      workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
 
-    # - name: sonar-analysis
-    #   image: $(params.MAVEN_IMAGE)
-    #   workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
-    #   command: ["/usr/bin/mvn"]
-    #   args:
-    #   - '-s'
-    #   - $(workspaces.source.path)/settings.xml
-    #   - '-Dsonar.projectKey=spb-java \'
-    #   - '-Dsonar.host.url=https://sonarqube-pipelines-tutorial.apps.amosirelanddev.amosonline.io' \
-    #   - '-Dsonar.login=sqp_39f7683b9fcf069037fa03f058aaf6a30f5bf4e3'
-    #   - $(params.GOALS)
-    # - name: mvn-deploy
-    #   image: $(params.MAVEN_IMAGE)
-    #   workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
-    #   command: ["/usr/bin/mvn"]
-    #   args:
-    #     - -s
-    #     - $(workspaces.source.path)/settings.xml
-    #     - -Dmaven.repo.local=$(workspaces.source.path)
-    #     - "$(params.DEPLOY)"
+  
         
       

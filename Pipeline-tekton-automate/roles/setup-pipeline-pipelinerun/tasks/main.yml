@@ -1,7 +1,7 @@
 ---
 # tasks file for ocs_for_prometheus
-- name: Login to the Openshift cli
-  shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+# - name: Login to the Openshift cli
+#   shell: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
 
 - name: List pods of openshift-monitoring
   shell: oc get pods,pvc -n {{ NAMESPACE }}

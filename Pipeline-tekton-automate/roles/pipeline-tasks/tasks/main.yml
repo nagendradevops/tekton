@@ -22,27 +22,26 @@
         src: git-clone.yml.j2
         dest: /tmp/pipeline_tasks/git-clone.yml
 
-# - name: Prepare yaml of maven-dependencies task to compile, build/create jar file
-#   template:
-#         src: maven-depend.yml.j2
-#         dest: /tmp/pipeline_tasks/maven-depend.yml
+- name: Prepare yaml of maven-dependencies task to compile, build/create jar file
+  template:
+        src: maven-depend.yml.j2
+        dest: /tmp/pipeline_tasks/maven-depend.yml
         
-# - name: Prepare yaml of building image task
-#   template:
-#         src: build-maven-image.yaml.j2
-#         dest: /tmp/pipeline_tasks/build-maven-image.yaml
+- name: Prepare yaml of building image task
+  template:
+        src: build-maven-image.yaml.j2
+        dest: /tmp/pipeline_tasks/build-maven-image.yaml
 
-# - name: Prepare yaml of applying manifests (k8s) task
-#   template:
-#         src: apply-manifests.yml.j2
-#         dest: /tmp/pipeline_tasks/apply-manifests.yml
+- name: Prepare yaml of applying manifests (k8s) task
+  template:
+        src: apply-manifests.yml.j2
+        dest: /tmp/pipeline_tasks/apply-manifests.yml
 
 
 - name: Create pipeline tasks
   shell: oc create -f /tmp/pipeline_tasks/
 
 - name: Check the tasks
-  echo: "The tasks has been created"
   shell: oc get tasks -n {{ NAMESPACE }}
   
 

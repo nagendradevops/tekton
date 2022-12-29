@@ -1,12 +1,12 @@
 ---
-- name: openshift container storage deployment
+- name: openshift pipeline tasks deployment
   hosts: localhost
   become: true
   roles:
     # - deploy-pipeline-operator
     # - configure-tekton
     - pipeline-tasks
-    #- setup-pipeline-pipelinerun
+    - setup-pipeline-pipelinerun
     # - install-triggers-listeners
     # - trigger-pipeline-eventlistener
  
