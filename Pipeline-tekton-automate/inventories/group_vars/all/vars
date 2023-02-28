@@ -1,6 +1,6 @@
 #OCP login variables
-ocp_login_token: < values > #sha256~9mmaoD9hwTamCsl7KE9G0jSA1n92hCZ5HjQtRcR7cWw
-#ocp_api_url: https://api.amosirelanddev.amosonline.io:6443
+ocp_login_token: < values > #
+#ocp_api_url: 
 ocp_api_url: < values > #https://api.amoslondondev.amosonline.io:6443
 
 
@@ -20,25 +20,25 @@ NAMESPACE: < values > #tekton-pipelines
 
 SA: < values > #pipeline
 #github credentails
-# git_username: nagendradevops
-# git_token: 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
+# git_username: 
+# git_token: 
 #gitlab credentails
-git_username: < values > #ocpconfig
+git_username: < values > #
 git_token: < values > #
 
 storage_size: < values > #5Gi
 
 #internal registry details
 int_registry_user_name: < values > #nagendra-reddy.bandi
-OCP_TOKEN: < values > #sha256~9mmaoD9hwTamCsl7KE9G0jSA1n92hCZ5HjQtRcR7cWw
-registry_url: < values > #default-route-openshift-image-registry.apps.amoslondondev.amosonline.io
+OCP_TOKEN: < values > #
+registry_url: < values > #
 
 image_version: < values > #0.1
 Image_stream: < values > #javaspb
 
 #sonar related #example
-sonar_login_token: < values > #cd1b71595f2518de91c7d1bd0537b1ca184927ba
-sonar_host_url: < values > #https://sonarqube-tekton-pipelines.apps.amoslondondev.amosonline.io
+sonar_login_token: < values > #
+sonar_host_url: < values > #
 sonar_project_key: < values > #spring-boot
 
 #Nexus user details
