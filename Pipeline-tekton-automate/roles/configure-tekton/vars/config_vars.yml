@@ -1,7 +1,0 @@
----
-#vars
-NAMESPACE: openshift-pipelines
-SA: pipeline
-git_username: nagendradevops
-git_token: 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
-storage_size: 5Gi

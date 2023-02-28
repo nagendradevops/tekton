@@ -1,0 +1,41 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerTemplate
+metadata:
+  name: trig-template
+  #namespace: {{ NAMESPACE }}
+spec:
+  params:
+    - default: 'https://gitlab.com/A872318/pipeline.git'
+      name: git-repo-url
+    - default: .
+      name: application-folder-name
+    - default: .
+      name: dockerfile-path
+    - default: springboot
+      name: application-name
+    - default: javaspb
+      name: image-name
+  resourcetemplates:
+    - apiVersion: tekton.dev/v1beta1
+      kind: PipelineRun
+      metadata:
+        generateName: build-deploy-
+      spec:
+        serviceAccountName: {{ SA }}
+        params:
+          - name: git-repo-url
+            value: $(tt.params.git-repo-url)
+          - name: application-folder-name
+            value: $(tt.params.application-folder-name)
+          - name: dockerfile-path
+            value: $(tt.params.dockerfile-path)
+          - name: application-name
+            value: $(tt.params.application-name)
+          - name: image-name
+            value: $(tt.params.image-name)
+        pipelineRef:
+          name: tekton-pl-auto
+        workspaces:
+          - name: source
+            persistentVolumeClaim:
+              claimName: pline-pvc

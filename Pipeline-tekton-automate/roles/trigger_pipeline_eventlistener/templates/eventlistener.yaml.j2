@@ -1,0 +1,16 @@
+#Note: this must enable
+#oc label namespace pipelines-tutorial operator.tekton.dev/enable-annotation=enabled
+apiVersion: triggers.tekton.dev/v1beta1
+kind: EventListener
+metadata:
+  name: gtlb-litner
+  
+spec:
+  serviceAccountName: {{ SA }}
+  triggers:
+    - name: testing-trigger 
+      bindings:
+      - ref: trig-bindings 
+      template:
+        ref: trig-template
+

@@ -1,0 +1,78 @@
+---
+# tasks file for configure tekton
+
+- name: Login to the Openshift cli
+  command: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+  register: login_status
+  changed_when: login_status.rc != 0
+
+- name: create temp directory for doing work in
+  ansible.builtin.file:
+    path: /tmp/config-tekton
+    state: directory
+    mode: '0755'
+  # register: mktemp
+  # changed_when: False
+
+# - name: creating temp variable for directory
+#   set_fact:
+#     tempdir: "{{ mktemp.stdout }}"
+
+- name: configure a  ServiceAccount (pipeline)
+  template:
+    src: sa-pipeline.yaml.j2
+    dest: "/tmp/config-tekton/sa-pipeline.yml"
+    mode: '0644'
+
+- name: Create ServiceAccount i.e pipeline
+  command: oc apply -f /tmp/config-tekton/sa-pipeline.yml
+  register: s_acc
+  changed_when: s_acc.rc != 0
+
+- name: Assign Privilized access to ServiceAccount
+  command: oc adm policy add-scc-to-user privileged -z pipeline -n {{ NAMESPACE }}
+  register: s_acc_privi
+  changed_when: s_acc_privi.rc != 0
+
+- name: configure a  default configmap (config-defaults)
+  template:
+    src: configmap.yaml.j2
+    dest: "/tmp/config-tekton/configmap.yml"
+    mode: '0644'
+
+- name: Change default configmap to use the pipeline SA
+  command: oc apply -f /tmp/config-tekton/configmap.yml
+  register: config_map
+  changed_when: config_map.rc != 0
+
+- name: Prepare yaml of gitsecret task to access the repository
+  template:
+      src: gitsecret.yaml.j2
+      dest: "/tmp/config-tekton/gitsecret.yml"
+      mode: '0644'
+
+- name: Prepare yaml of PVC task
+  template:
+      src: pipeline-pvc.yaml.j2
+      dest: "/tmp/config-tekton/pipeline-pvc.yml"
+      mode: '0644'
+
+- name: create gitsecret
+  command: oc apply -f /tmp/config-tekton/gitsecret.yml
+  register: chk_gitsec
+  changed_when: chk_gitsec.rc != 0
+
+- name: Grant our ServiceAccount access to the Git Repositories 
+  command: oc secrets link pipeline gitlabsecret -n  {{ NAMESPACE }}
+  register: grant_S_acc_privi
+  changed_when: grant_S_acc_privi.rc != 0
+
+- name: create pvc
+  command: oc apply -f /tmp/config-tekton/pipeline-pvc.yml
+  register: chk_pvc
+  changed_when: chk_pvc.rc != 0
+
+- name: wait for 1 mins to create pvc
+  wait_for:
+    timeout: 60
+

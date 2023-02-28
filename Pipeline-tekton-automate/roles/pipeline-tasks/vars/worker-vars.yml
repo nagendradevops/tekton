@@ -1,8 +1,0 @@
----
-infrastructureID: 
-role: worker
-region: 
-ami_id: 
-InstanceProfile: 
-instanceType: 
-ocp_server_url:

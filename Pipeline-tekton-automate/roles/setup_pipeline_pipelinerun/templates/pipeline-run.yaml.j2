@@ -1,0 +1,24 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: java-app-example-pl
+  namespace: {{ NAMESPACE }}
+spec:
+  pipelineRef:
+    name: tekton-pl-auto
+  serviceAccountName: {{ SA }}
+  params:
+    - name: git-repo-url
+      value: https://github.com/nagendradevops/spb-docker.git
+    - name: application-folder
+      value: .
+    - name: docker-file
+      value: .
+    - name: application-name
+      value: java-spb
+    - name: image-name
+      value: javaspb
+  workspaces:
+  - name: source
+    persistentVolumeClaim:
+      claimName: pipeline-pvc

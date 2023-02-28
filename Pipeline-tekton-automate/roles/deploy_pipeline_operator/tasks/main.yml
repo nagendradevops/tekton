@@ -1,0 +1,98 @@
+---
+# tasks file for deploy-pipelines operator
+- name: Login to the Openshift cli
+  command: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}  --insecure-skip-tls-verify 
+  register: login_status
+  changed_when: login_status.rc != 0
+
+# - name: create project/namespace
+#   command: oc new-project {{ NAMESPACE }}
+#   register: proj
+#   changed_when: proj.rc != 0
+
+- name: Assign policy to anyuid to SA tekton-pipelines-controller
+  command: oc adm policy add-scc-to-user anyuid -z tekton-pipelines-controller
+  register: assign_policy
+  changed_when: assign_policy.rc != 0
+
+- name: Assign policy to anyuid to SA tekton-pipelines-webhook
+  command: oc adm policy add-scc-to-user anyuid -z tekton-pipelines-webhook
+  register: add_policy
+  changed_when: add_policy.rc != 0
+
+- name:  create namespace
+  command: oc create namespace openshift-pipelines
+  register: ns
+  changed_when: ns.rc != 0
+  ignore_errors: true
+  
+- name: create temp directory for doing work in
+  ansible.builtin.file:
+    path: /tmp/pipeline-operator
+    state: directory
+    mode: '0755'
+  #register: mktemp
+  # changed_when: False
+
+# - name: display directory name
+#   debug:
+#    msg: mktemp
+
+# - name: created temp directory
+#   set_fact:
+#     tempdir: "{{ mktemp }}"
+
+- name: create pipelines operator NameSpace
+  template:
+    src: openshift-pipelines.yaml.j2
+    dest: "/tmp/pipeline-operator/openshift-pipelines.yaml" 
+    mode: '0644'   
+
+- name: setup pipelines operator group
+  template:
+    src: operator-group.yaml.j2
+    dest: "/tmp/pipeline-operator/operator-group.yaml"
+    mode: '0644'
+
+- name: Installing pipelines operator
+  template:
+    src: subscribe-operator.yaml.j2
+    dest: "/tmp/pipeline-operator/subscribe-operator.yaml"
+    mode: '0644'
+
+- name: configure openshift-pipelines operator
+  command: oc apply -f /tmp/pipeline-operator/openshift-pipelines.yaml
+  register: config_operator
+  changed_when: config_operator.rc != 0
+
+- name: deploy openshift-pipelines operator
+  command: oc apply -f /tmp/pipeline-operator/operator-group.yaml
+  register: deploy_operator
+  changed_when: deploy_operator.rc != 0
+
+- name: subscribe the openshift-pipelines
+  command: oc apply -f /tmp/pipeline-operator/subscribe-operator.yaml
+  register: subscribe_operator
+  changed_when: subscribe_operator.rc != 0
+
+- name: wait for 2 mins
+  wait_for:
+    timeout: 120
+
+- name: check csv
+  command: oc get csv -n openshift-operators
+  register: csv_operator
+  changed_when: csv_operator.rc != 0
+
+- name: displaying operator info
+  debug:
+    msg: "{{ csv_operator }}"
+
+- name: check deployments of openshift-pipelines operator
+  command: oc get pods -n openshift-operators
+  register: pods
+  changed_when: pods.rc != 0
+
+- name: displaying pods info
+  debug:
+    msg: "{{ pods }}"

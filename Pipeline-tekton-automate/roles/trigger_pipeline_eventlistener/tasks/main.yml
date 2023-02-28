@@ -1,0 +1,123 @@
+---
+- name: Login to the Openshift cli
+  command: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+  register: login_status
+  changed_when: login_status.rc != 0
+
+- name: enter into pipelines namespace
+  command: oc project {{ NAMESPACE }}
+  register: enter_ns
+  changed_when: enter_ns.rc != 0
+
+- name: create temp directory for doing work in
+  ansible.builtin.file:
+    path: /tmp/event-triggers
+    state: directory
+    mode: '0755'
+#   register: mktemp
+#   changed_when: False
+
+# - name: crated temp directory
+#   set_fact:
+#     tempdir: "{{ mktemp.stdout }}"
+
+- name: Enableing "operator.tekton.dev/enable-annotation"
+  command: oc label namespace {{ NAMESPACE }} operator.tekton.dev/enable-annotation=enabled
+  register: default_apport
+  changed_when: default_apport.rc !=0 
+  ignore_errors: true
+
+- name: preparing triggertemplate
+  template:
+    src: triggertemplate.yaml.j2
+    dest: "/tmp/event-triggers/triggertemplate.yaml"
+    mode: '0644'
+
+- name: deploy triggertemplate
+  command: oc apply -f /tmp/event-triggers/triggertemplate.yaml
+  register: deploy_tt
+  changed_when: deploy_tt.rc != 0
+
+- name: preparing triggerbinding
+  template:
+    src: triggerbinding.yaml.j2
+    dest: "/tmp/event-triggers/triggerbinding.yaml"
+    mode: '0644'
+
+- name: deploy triggerbinding
+  command: oc apply -f /tmp/event-triggers/triggerbinding.yaml
+  register: deploy_tb
+  changed_when: deploy_tb.rc != 0
+
+- name: preparing eventlistener
+  template:
+    src: eventlistener.yaml.j2
+    dest: "/tmp/event-triggers/eventlistener.yaml"
+    mode: '0644'
+
+- name: deploy eventlistener
+  command: oc apply -f /tmp/event-triggers/eventlistener.yaml
+  register: deploy_el
+  changed_when: deploy_el.rc != 0
+
+- name: verify the triggers in current namespace
+  command: oc get triggertemplate,triggerbinding,eventlistener -n {{ NAMESPACE }}
+  register: verify_triggers
+  changed_when: verify_triggers.rc != 0
+
+- name: verify the eventlistener address
+  command: oc get eventlistener -n {{ NAMESPACE }}
+  register: el_addr
+  changed_when: el_addr.rc != 0
+
+- name: displaying eventlistener name
+  debug:
+    msg: "{{ el_addr.stdout_lines }}"
+
+- name: get the secret name as part of eventlistener creation
+  shell: oc get secret  -n {{ NAMESPACE }} | grep 'el-' | awk '{print $1}'
+  register: secret_name
+  #changed_when: secret_name.rc != 0
+
+- name: displaying the secret name
+  debug:
+   msg: "{{ secret_name.stdout_lines }}"
+
+- name: get the tls.key certificates from the secret
+  shell: oc get secret el-gtlb-litner -n {{ NAMESPACE }} -o jsonpath="{.data['tls\.key']}" | base64 -d > /tmp/tls.key
+  register: tlskey_cert
+  changed_when: tlskey_cert.rc != 0
+
+- name: get the tls.crt & ca.crt certificates from secret as part of eventlistener creation
+  shell: oc get secret el-gtlb-litner -n {{ NAMESPACE }} -o jsonpath="{.data['tls\.crt']}" | base64 -d > /tmp/sec_file.crt
+  register: tlscrt_cacrt
+  changed_when: tlscrt_cacrt.rc != 0
+
+- name: split the tls.crt file as it contains tls.crt & ca.crt info
+  shell: csplit -s -z -f /tmp/individual- /tmp/sec_file.crt '/-----BEGIN CERTIFICATE-----/' '{*}'
+  register: split_tlsfile
+  changed_when: split_tlsfile.rc != 0
+
+- name: convert the filenames as original names tls.crt
+  command: cp /tmp/individual-00 /tmp/tls.crt
+  register: copy_crt
+  changed_when: copy_crt.rc != 0
+
+- name: convert the filenames as original names ca.crt
+  command: cp /tmp/individual-01 /tmp/ca.crt
+  register: copy_cacrt
+  changed_when: copy_cacrt.rc != 0
+
+- name: create a route
+  shell: oc create route reencrypt --service=el-gtlb-litner --cert=/tmp/tls.crt --key=/tmp/tls.key --ca-cert=/tmp/ca.crt --hostname=el-gtlb-litner-tekton-pipelines.apps.amoslondondev.amosonline.io
+  register: create_route
+  changed_when: create_route.rc != 0
+
+- name: get the route
+  shell: oc get route el-gtlb-litner -n {{ NAMESPACE }} -o jsonpath --template="{.spec.host}" 
+  register: route_host
+  changed_when: route_host.rc != 0
+
+- name: displaying the route name
+  debug:
+   msg: "{{ route_host.stdout_lines }}"

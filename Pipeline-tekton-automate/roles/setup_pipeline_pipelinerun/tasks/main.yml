@@ -1,0 +1,65 @@
+---
+
+- name: Login to the Openshift cli
+  command: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+  register: login_status
+  changed_when: login_status.rc != 0
+
+- name: List pods of openshift-monitoring
+  command: oc get pods,pvc -n {{ NAMESPACE }}
+  register: pods_monitoring
+  changed_when: pods_monitoring.rc != 0
+
+- name: displaying pods
+  debug:
+    msg: "{{ pods_monitoring }}"
+
+- name: create temp directory for doing work in
+  ansible.builtin.file:
+    path: /tmp/pipeline
+    state: directory
+    mode: '0755'
+#   register: mktemp
+#   changed_when: False
+
+# - name: created the directory
+#   set_fact:
+#     tempdir: "{{ mktemp.stdout }}"
+
+- name: copy template of pipeline
+  template:
+    src: maven-pipeline.yaml.j2
+    dest: "/tmp/pipeline/maven-pipeline.yml"
+    mode: '0644'
+
+- name: deploy pipeline
+  command: oc apply -f /tmp/pipeline/maven-pipeline.yml
+  register: dep_pipeline
+  changed_when: dep_pipeline.rc != 0
+
+- name: list the pipelines
+  command: oc get pipeline
+  register: display_pipeline
+  changed_when: display_pipeline.rc != 0
+
+# - name: copy template of pipelinerun
+#   template:
+#     src: pipeline-run.yaml.j2
+#     dest: "{{ tempdir }}/pipeline-run.yml"
+
+# - name: deploy pipelinerun to trigger the pipeline
+#   shell: oc apply -f {{ tempdir }}/pipeline-run.yml
+
+
+# - name: wait for 1 mins pods will be restarted
+#   wait_for:
+#      timeout: 60
+
+- name: check pod status
+  command: oc get tasks,pipeline -n {{ NAMESPACE }}
+  register: pods_monitoring
+  changed_when: pods_monitoring.rc != 0
+
+- name: displaying pods
+  debug:
+    msg: "{{ pods_monitoring }}"

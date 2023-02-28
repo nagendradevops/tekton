@@ -3,10 +3,9 @@
   hosts: localhost
   become: true
   roles:
-    # - deploy-pipeline-operator
-    # - configure-tekton
-    - pipeline-tasks
-    - setup-pipeline-pipelinerun
-    # - install-triggers-listeners
-    # - trigger-pipeline-eventlistener
+    - deploy_pipeline_operator
+    - configure_tekton
+    - pipeline_tasks
+    - setup_pipeline_pipelinerun
+    - trigger_pipeline_eventlistener
  

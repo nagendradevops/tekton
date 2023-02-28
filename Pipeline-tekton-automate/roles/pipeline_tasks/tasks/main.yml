@@ -1,0 +1,63 @@
+---
+# Create directory for storing yaml files on remote host
+- name: Login to the Openshift cli
+  command: oc login --token={{ ocp_login_token }} --server={{ ocp_api_url }}
+  register: login_status
+  changed_when: login_status.rc != 0
+
+# - name: Ansible check directory.
+#   stat:
+#     path: /tmp/pipeline_tasks
+#   register: my_folder
+#   changed_when: my_folder.rc != 0
+
+- name: "Ansible Prepare yaml of directory if not exists"
+  ansible.builtin.file:
+    path: /tmp/pipeline_tasks/
+    state: directory
+    mode: 0755
+  #when: my_folder.stat.exists == false
+
+- name: Creating Image_stream
+  command: oc create imagestream {{ Image_stream }} -n {{ NAMESPACE }}
+  register: imagestream
+  changed_when: imagestream.rc != 0
+  ignore_errors: true
+
+# Create tasks for tekton pipeline
+
+- name: Prepare yaml of git-clone task to clone the repository
+  template:
+        src: git-clone.yml.j2
+        dest: /tmp/pipeline_tasks/git-clone.yml
+        mode: '0644'
+
+- name: Prepare yaml of maven-dependencies task to compile, build/create jar file
+  template:
+        src: maven-depend.yml.j2
+        dest: /tmp/pipeline_tasks/maven-depend.yml
+        mode: '0644'
+        
+- name: Prepare yaml of building image task
+  template:
+        src: build-maven-image.yaml.j2
+        dest: /tmp/pipeline_tasks/build-maven-image.yaml
+        mode: '0644'
+
+- name: Prepare yaml of applying manifests (k8s) task
+  template:
+        src: apply-manifests.yml.j2
+        dest: /tmp/pipeline_tasks/apply-manifests.yml
+        mode: '0644'
+
+- name: Create pipeline tasks
+  command: oc apply -f /tmp/pipeline_tasks/
+  register: pipeline_tasks
+  changed_when: pipeline_tasks.rc != 0
+
+- name: Check the tasks
+  command: oc get tasks -n {{ NAMESPACE }}
+  register: display_task
+  changed_when: display_task.rc != 0
+  
+

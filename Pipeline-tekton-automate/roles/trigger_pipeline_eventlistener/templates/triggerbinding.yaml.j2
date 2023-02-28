@@ -1,0 +1,14 @@
+apiVersion: triggers.tekton.dev/v1alpha1
+kind: TriggerBinding
+metadata:
+  name: trig-bindings 
+ # namespace: {{ NAMESPACE }} 
+spec:
+  params:
+  - name: git-repo-url
+    value: $(body.repository.git_http_url)
+#  - name: git-repo-name
+#    value: $(body.repository.name)
+#  - name: buildRevision
+#    value: $(body.commits.id)
+#    #value: $(body.head_commit.id)
