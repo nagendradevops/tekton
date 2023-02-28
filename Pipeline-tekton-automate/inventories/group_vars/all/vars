@@ -24,7 +24,7 @@ SA: < values > #pipeline
 # git_token: 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
 #gitlab credentails
 git_username: < values > #ocpconfig
-git_token: < values > #glpat-Us_hYcWMkTSX2a5RzSQ-
+git_token: < values > #
 
 storage_size: < values > #5Gi
 
